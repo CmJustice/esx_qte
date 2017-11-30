@@ -12,6 +12,10 @@ local Keys = {
 
 ESX = nil
 local clicked = false
+local qteActive = false
+
+
+
 Citizen.CreateThread(function()
 	while ESX == nil do
 		TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
@@ -37,7 +41,7 @@ end)
 
 
 RegisterNetEvent('qte:clientWait')
-AddEventHandler('qte:clientWait', function(arrow, time)
+AddEventHandler('qte:clientWait', function(arrow, time, succesCb, failCb)
 	clicked = false
 	SendNUIMessage({type='qte', button = arrow, timee = time})
 	SetNuiFocus(true,true)
@@ -47,13 +51,54 @@ AddEventHandler('qte:clientWait', function(arrow, time)
 		Wait(0)
 	end
 	if clicked then
-		TriggerEvent('qte:clientClicked', arrow)
+		--TriggerEvent('qte:clientClicked', arrow)
+		succesCb()
 	else
-		TriggerEvent('qte:clientClickFailed', arrow)
+		--TriggerEvent('qte:clientClickFailed', arrow)
+		failCb()
 	end
 	SetNuiFocus(false)
 
 end)
+
+
+
+RegisterNetEvent('qte:start')
+AddEventHandler('qte:start', function(buttons, gameDuration, qteDuration, animLib, animName, succesCb, failCb, finishCb)
+
+
+	qteActive = true
+	RequestAnimDict(animLib)
+	while not HasAnimDictLoaded(animLib) do
+		Wait(1)
+	end
+	local ped = GetPlayerPed(-1)
+	TaskPlayAnim(ped, animLib, animName, 8.0, 1.0, -1, 1, 0, 0, 0, 0)
+	--Dance Loop
+	for i=1,gameDuration do
+		if qteActive == false then
+			break
+		end
+		if math.fmod(i, 200) == 0 then
+			local rand = math.random(1, #buttons)
+
+			TriggerEvent('qte:clientWait', buttons[rand], qteDuration, succesCb, failCb)
+
+			qteDuration = qteDuration - 100
+		end
+		Wait(0)
+	 end
+	 if qteActive then
+	 	ClearPedTasks(GetPlayerPed(-1))
+	 	print('Qte Done!')
+	 	finishCb()
+	 	qteActive = false
+	 end
+
+
+end)
+
+
 
 
 
